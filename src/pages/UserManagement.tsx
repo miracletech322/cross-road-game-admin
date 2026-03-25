@@ -128,6 +128,7 @@ export default function UserManagement() {
                 <tr className="bg-gray-2 text-left dark:bg-meta-4">
                   <th className="min-w-[220px] px-4 py-4 font-medium text-black dark:text-white">Email</th>
                   <th className="min-w-[120px] px-4 py-4 font-medium text-black dark:text-white">Username</th>
+                  <th className="min-w-[80px] px-4 py-4 font-medium text-black dark:text-white">Credits</th>
                   <th className="min-w-[80px] px-4 py-4 font-medium text-black dark:text-white">Role</th>
                   <th className="min-w-[160px] px-4 py-4 font-medium text-black dark:text-white">Created</th>
                   <th className="px-4 py-4 font-medium text-black dark:text-white">Actions</th>
@@ -136,13 +137,13 @@ export default function UserManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-body dark:text-bodydark">
+                    <td colSpan={6} className="px-4 py-8 text-center text-body dark:text-bodydark">
                       Loading…
                     </td>
                   </tr>
                 ) : users.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-4 py-8 text-center text-body dark:text-bodydark">
+                    <td colSpan={6} className="px-4 py-8 text-center text-body dark:text-bodydark">
                       {forbidden ? 'No data' : 'No users found'}
                     </td>
                   </tr>
@@ -151,6 +152,7 @@ export default function UserManagement() {
                     <tr key={u.id} className="border-b border-stroke dark:border-strokedark">
                       <td className="px-4 py-5 text-black dark:text-white">{u.email}</td>
                       <td className="px-4 py-5 text-black dark:text-white">{u.username}</td>
+                      <td className="px-4 py-5 text-black dark:text-white">{u.credits ?? 0}</td>
                       <td className="px-4 py-5">
                         <span
                           className={`inline-block rounded-full px-2.5 py-0.5 text-sm font-medium ${

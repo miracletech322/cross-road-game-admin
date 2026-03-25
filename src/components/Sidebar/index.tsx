@@ -106,6 +106,29 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                   User management
                 </NavLink>
               </li>
+              <li>
+                <NavLink
+                  to="/credit-transactions"
+                  className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                    pathname.includes('/credit-transactions') && 'bg-graydark dark:bg-meta-4'
+                  }`}
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1.41 16.09V20h-2.67v-1.93c-1.71-.36-3.16-1.46-3.27-3.4h1.96c.1 1.05 1.08 1.87 2.67 1.87 1.38 0 2.46-.63 2.46-1.79 0-1.1-1.02-1.59-2.86-2.1-2.16-.55-4.04-1.35-4.04-3.67 0-1.92 1.43-3.26 3.18-3.66V4h2.67v1.95c1.86.45 3.07 1.64 3.07 3.22h-1.94c-.01-1.12-.93-1.84-2.35-1.84-1.18 0-2 .57-2 1.55 0 1.07 1.1 1.46 2.93 1.99 2.11.57 3.97 1.34 3.97 3.88 0 2.05-1.62 3.43-3.74 3.78z"
+                      fill=""
+                    />
+                  </svg>
+                  Credit transactions
+                </NavLink>
+              </li>
             </ul>
           </div>
         </nav>

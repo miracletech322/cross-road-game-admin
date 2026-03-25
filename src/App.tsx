@@ -5,6 +5,7 @@ import Loader from './common/Loader';
 import GuestOnly from './layout/GuestOnly';
 import ProtectedLayout from './layout/ProtectedLayout';
 import SignIn from './pages/Authentication/SignIn';
+import CreditTransactions from './pages/CreditTransactions';
 import UserManagement from './pages/UserManagement';
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
 
       <Route element={<ProtectedLayout />}>
         <Route path="/users" element={<UserManagement />} />
+        <Route path="/credit-transactions" element={<CreditTransactions />} />
         <Route path="/" element={<Navigate to="/users" replace />} />
       </Route>
 

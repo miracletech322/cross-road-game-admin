@@ -5,6 +5,22 @@ export type PublicUser = {
   email: string;
   username: string;
   role: 'user' | 'admin';
+  credits?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type CreditTransaction = {
+  id: string;
+  userId: string;
+  user?: { email: string; username: string };
+  credits: number;
+  amountCents: number;
+  currency: string;
+  status: string;
+  stripeCheckoutSessionId?: string;
+  stripePaymentIntentId?: string;
+  stripeCustomerId?: string;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -87,4 +103,8 @@ export async function deleteUserRequest(id: string): Promise<{ user: PublicUser 
   return apiFetch<{ user: PublicUser }>(`/api/users/${id}`, {
     method: 'DELETE',
   });
+}
+
+export async function listCreditTransactionsRequest(): Promise<{ transactions: CreditTransaction[] }> {
+  return apiFetch<{ transactions: CreditTransaction[] }>('/api/credits/transactions');
 }
