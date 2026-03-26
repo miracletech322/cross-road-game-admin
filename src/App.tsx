@@ -6,6 +6,7 @@ import GuestOnly from './layout/GuestOnly';
 import ProtectedLayout from './layout/ProtectedLayout';
 import SignIn from './pages/Authentication/SignIn';
 import CreditTransactions from './pages/CreditTransactions';
+import AdsManagement from './pages/AdsManagement';
 import Ranking from './pages/Ranking';
 import UserManagement from './pages/UserManagement';
 
@@ -32,6 +33,7 @@ function App() {
       <Route element={<ProtectedLayout />}>
         <Route path="/users" element={<UserManagement />} />
         <Route path="/credit-transactions" element={<CreditTransactions />} />
+        <Route path="/ads" element={<AdsManagement />} />
         <Route path="/ranking" element={<Ranking />} />
         <Route path="/" element={<Navigate to="/users" replace />} />
       </Route>

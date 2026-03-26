@@ -42,6 +42,20 @@ export type RankRow = {
   maxScore: number;
 };
 
+export type AdRecord = {
+  id: string;
+  title: string;
+  type: 'banner' | 'interstitial' | 'rewarded' | 'video';
+  placement: string;
+  imageUrl: string;
+  linkUrl: string;
+  enabled: boolean;
+  sortOrder: number;
+  meta?: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 let unauthorizedHandler: (() => void) | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
@@ -137,4 +151,33 @@ export async function getUserHistoryRequest(userId: string): Promise<{
 
 export async function listRankingRequest(limit = 100): Promise<{ ranking: RankRow[] }> {
   return apiFetch<{ ranking: RankRow[] }>(`/api/game/rank?limit=${encodeURIComponent(String(limit))}`);
+}
+
+export async function listAdsRequest(): Promise<{ ads: AdRecord[] }> {
+  return apiFetch<{ ads: AdRecord[] }>('/api/ads');
+}
+
+export async function createAdRequest(
+  body: Omit<AdRecord, 'id' | 'createdAt' | 'updatedAt' | 'meta'> & { meta?: Record<string, unknown> }
+): Promise<{ ad: AdRecord }> {
+  return apiFetch<{ ad: AdRecord }>('/api/ads', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function updateAdRequest(
+  id: string,
+  body: Partial<Omit<AdRecord, 'id' | 'createdAt' | 'updatedAt'>>
+): Promise<{ ad: AdRecord }> {
+  return apiFetch<{ ad: AdRecord }>(`/api/ads/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(body),
+  });
+}
+
+export async function deleteAdRequest(id: string): Promise<{ ad: AdRecord }> {
+  return apiFetch<{ ad: AdRecord }>(`/api/ads/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+  });
 }
