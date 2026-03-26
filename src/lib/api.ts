@@ -35,6 +35,13 @@ export type ShopPurchaseRecord = {
   updatedAt?: string;
 };
 
+export type RankRow = {
+  rank: number;
+  userId: string;
+  username: string;
+  maxScore: number;
+};
+
 let unauthorizedHandler: (() => void) | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
@@ -126,4 +133,8 @@ export async function getUserHistoryRequest(userId: string): Promise<{
   return apiFetch<{ creditTransactions: CreditTransaction[]; shopPurchases: ShopPurchaseRecord[] }>(
     `/api/users/${encodeURIComponent(userId)}/history`
   );
+}
+
+export async function listRankingRequest(limit = 100): Promise<{ ranking: RankRow[] }> {
+  return apiFetch<{ ranking: RankRow[] }>(`/api/game/rank?limit=${encodeURIComponent(String(limit))}`);
 }

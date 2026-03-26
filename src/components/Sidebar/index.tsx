@@ -129,6 +129,29 @@ const Sidebar = ({ sidebarOpen, setSidebarOpen }: SidebarProps) => {
                   Credit transactions
                 </NavLink>
               </li>
+              <li>
+                <NavLink
+                  to="/ranking"
+                  className={`group relative flex items-center gap-2.5 rounded-sm py-2 px-4 font-medium text-bodydark1 duration-300 ease-in-out hover:bg-graydark dark:hover:bg-meta-4 ${
+                    pathname.includes('/ranking') && 'bg-graydark dark:bg-meta-4'
+                  }`}
+                >
+                  <svg
+                    className="fill-current"
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M3 19h18v2H3v-2Zm2-2V9h3v8H5Zm5 0V3h3v14h-3Zm5 0v-6h3v6h-3Z"
+                      fill=""
+                    />
+                  </svg>
+                  Ranking
+                </NavLink>
+              </li>
             </ul>
           </div>
         </nav>
