@@ -4,8 +4,13 @@ import toast from 'react-hot-toast';
 import Breadcrumb from '../components/Breadcrumbs/Breadcrumb';
 import PageTitle from '../components/PageTitle';
 import { useAuth } from '../context/AuthContext';
-import type { PublicUser } from '../lib/api';
-import { deleteUserRequest, listUsersRequest, updateUserRequest } from '../lib/api';
+import type { CreditTransaction, PublicUser, ShopPurchaseRecord } from '../lib/api';
+import {
+  deleteUserRequest,
+  getUserHistoryRequest,
+  listUsersRequest,
+  updateUserRequest,
+} from '../lib/api';
 
 function formatDate(iso?: string) {
   if (!iso) return '—';
@@ -16,6 +21,36 @@ function formatDate(iso?: string) {
   }
 }
 
+function formatMoney(cents: number, currency: string) {
+  const cur = currency?.toUpperCase() || 'USD';
+  return `${(cents / 100).toFixed(2)} ${cur}`;
+}
+
+function shopTypeLabel(type: ShopPurchaseRecord['type']) {
+  switch (type) {
+    case 'buyback':
+      return 'Revive';
+    case 'shield':
+      return 'Shield';
+    case 'character':
+      return 'Character';
+    case 'adblock':
+      return 'Adblock';
+    default:
+      return type;
+  }
+}
+
+function formatMeta(meta: Record<string, unknown>) {
+  const keys = Object.keys(meta || {});
+  if (keys.length === 0) return '—';
+  try {
+    return JSON.stringify(meta);
+  } catch {
+    return '—';
+  }
+}
+
 export default function UserManagement() {
   const { user: currentUser, token, login } = useAuth();
   const [users, setUsers] = useState<PublicUser[]>([]);
@@ -23,6 +58,11 @@ export default function UserManagement() {
   const [forbidden, setForbidden] = useState(false);
   const [editing, setEditing] = useState<PublicUser | null>(null);
   const [deleting, setDeleting] = useState<PublicUser | null>(null);
+  const [historyUser, setHistoryUser] = useState<PublicUser | null>(null);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<string | null>(null);
+  const [historyCreditTx, setHistoryCreditTx] = useState<CreditTransaction[]>([]);
+  const [historyShop, setHistoryShop] = useState<ShopPurchaseRecord[]>([]);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
@@ -47,6 +87,38 @@ export default function UserManagement() {
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!historyUser) {
+      setHistoryCreditTx([]);
+      setHistoryShop([]);
+      setHistoryError(null);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      setHistoryLoading(true);
+      setHistoryError(null);
+      try {
+        const { creditTransactions, shopPurchases } = await getUserHistoryRequest(historyUser.id);
+        if (!cancelled) {
+          setHistoryCreditTx(creditTransactions);
+          setHistoryShop(shopPurchases);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          setHistoryCreditTx([]);
+          setHistoryShop([]);
+          setHistoryError(e instanceof Error ? e.message : 'Failed to load history');
+        }
+      } finally {
+        if (!cancelled) setHistoryLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [historyUser]);
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -111,7 +183,12 @@ export default function UserManagement() {
       <div className="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark">
         <div className="flex flex-col gap-4 px-4 py-6 md:px-6 xl:px-7.5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h4 className="text-xl font-semibold text-black dark:text-white">Users</h4>
+            <div>
+              <h4 className="text-xl font-semibold text-black dark:text-white">Users</h4>
+              {!forbidden && (
+                <p className="mt-1 text-sm text-body dark:text-bodydark">Click a row to view payment and shop history.</p>
+              )}
+            </div>
             <button
               type="button"
               onClick={() => load()}
@@ -149,7 +226,24 @@ export default function UserManagement() {
                   </tr>
                 ) : (
                   users.map((u) => (
-                    <tr key={u.id} className="border-b border-stroke dark:border-strokedark">
+                    <tr
+                      key={u.id}
+                      role="button"
+                      tabIndex={forbidden ? -1 : 0}
+                      onClick={() => {
+                        if (!forbidden) setHistoryUser(u);
+                      }}
+                      onKeyDown={(ev) => {
+                        if (forbidden) return;
+                        if (ev.key === 'Enter' || ev.key === ' ') {
+                          ev.preventDefault();
+                          setHistoryUser(u);
+                        }
+                      }}
+                      className={`border-b border-stroke dark:border-strokedark ${
+                        forbidden ? '' : 'cursor-pointer hover:bg-gray-2/80 dark:hover:bg-meta-4/50'
+                      }`}
+                    >
                       <td className="px-4 py-5 text-black dark:text-white">{u.email}</td>
                       <td className="px-4 py-5 text-black dark:text-white">{u.username}</td>
                       <td className="px-4 py-5 text-black dark:text-white">{u.credits ?? 0}</td>
@@ -165,7 +259,7 @@ export default function UserManagement() {
                         </span>
                       </td>
                       <td className="px-4 py-5 text-body dark:text-bodydark">{formatDate(u.createdAt)}</td>
-                      <td className="px-4 py-5">
+                      <td className="px-4 py-5" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => e.stopPropagation()}>
                         <div className="flex flex-wrap gap-2">
                           <button
                             type="button"
@@ -258,6 +352,145 @@ export default function UserManagement() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {historyUser && (
+        <div
+          className="fixed inset-0 z-99999 flex items-center justify-center bg-black bg-opacity-50 px-4 py-5"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="user-history-title"
+          onClick={() => setHistoryUser(null)}
+        >
+          <div
+            className="flex max-h-[90vh] w-full max-w-5xl flex-col rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex shrink-0 flex-wrap items-start justify-between gap-3 border-b border-stroke px-5 py-4 dark:border-strokedark">
+              <div>
+                <h3 id="user-history-title" className="text-lg font-semibold text-black dark:text-white">
+                  User history
+                </h3>
+                <p className="mt-1 text-sm text-body dark:text-bodydark">
+                  {historyUser.email} · {historyUser.username}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setHistoryUser(null)}
+                className="rounded border border-stroke px-3 py-1.5 text-sm hover:bg-gray-100 dark:border-strokedark dark:hover:bg-meta-4"
+              >
+                Close
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto px-5 py-4">
+              {historyLoading && (
+                <p className="py-8 text-center text-body dark:text-bodydark">Loading history…</p>
+              )}
+              {!historyLoading && historyError && (
+                <p className="rounded-sm border border-meta-1 bg-meta-1 bg-opacity-10 px-4 py-3 text-sm text-meta-1">
+                  {historyError}
+                </p>
+              )}
+              {!historyLoading && !historyError && (
+                <div className="flex flex-col gap-8">
+                  <section>
+                    <h4 className="mb-3 text-base font-semibold text-black dark:text-white">
+                      Stripe credit purchases
+                    </h4>
+                    <div className="max-w-full overflow-x-auto rounded-sm border border-stroke dark:border-strokedark">
+                      <table className="w-full table-auto text-sm">
+                        <thead>
+                          <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                            <th className="px-3 py-3 font-medium text-black dark:text-white">Credits</th>
+                            <th className="px-3 py-3 font-medium text-black dark:text-white">Amount</th>
+                            <th className="px-3 py-3 font-medium text-black dark:text-white">Status</th>
+                            <th className="min-w-[180px] px-3 py-3 font-medium text-black dark:text-white">
+                              Stripe session
+                            </th>
+                            <th className="min-w-[140px] px-3 py-3 font-medium text-black dark:text-white">Created</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historyCreditTx.length === 0 ? (
+                            <tr>
+                              <td colSpan={5} className="px-3 py-6 text-center text-body dark:text-bodydark">
+                                No credit purchases
+                              </td>
+                            </tr>
+                          ) : (
+                            historyCreditTx.map((t) => (
+                              <tr key={t.id} className="border-t border-stroke dark:border-strokedark">
+                                <td className="px-3 py-3 text-black dark:text-white">{t.credits}</td>
+                                <td className="px-3 py-3 text-black dark:text-white">
+                                  {formatMoney(t.amountCents, t.currency)}
+                                </td>
+                                <td className="px-3 py-3">
+                                  <span
+                                    className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+                                      t.status === 'completed'
+                                        ? 'bg-success bg-opacity-15 text-success'
+                                        : t.status === 'pending'
+                                          ? 'bg-warning bg-opacity-15 text-warning'
+                                          : 'bg-meta-1 bg-opacity-15 text-meta-1'
+                                    }`}
+                                  >
+                                    {t.status}
+                                  </span>
+                                </td>
+                                <td className="max-w-[220px] truncate px-3 py-3 font-mono text-xs text-body dark:text-bodydark">
+                                  {t.stripeCheckoutSessionId ?? '—'}
+                                </td>
+                                <td className="px-3 py-3 text-body dark:text-bodydark">{formatDate(t.createdAt)}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                  <section>
+                    <h4 className="mb-3 text-base font-semibold text-black dark:text-white">
+                      Shop &amp; revive (credits spent)
+                    </h4>
+                    <div className="max-w-full overflow-x-auto rounded-sm border border-stroke dark:border-strokedark">
+                      <table className="w-full table-auto text-sm">
+                        <thead>
+                          <tr className="bg-gray-2 text-left dark:bg-meta-4">
+                            <th className="px-3 py-3 font-medium text-black dark:text-white">Type</th>
+                            <th className="px-3 py-3 font-medium text-black dark:text-white">Credits</th>
+                            <th className="min-w-[160px] px-3 py-3 font-medium text-black dark:text-white">Details</th>
+                            <th className="min-w-[140px] px-3 py-3 font-medium text-black dark:text-white">Time</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {historyShop.length === 0 ? (
+                            <tr>
+                              <td colSpan={4} className="px-3 py-6 text-center text-body dark:text-bodydark">
+                                No shop or revive purchases
+                              </td>
+                            </tr>
+                          ) : (
+                            historyShop.map((p) => (
+                              <tr key={p.id} className="border-t border-stroke dark:border-strokedark">
+                                <td className="px-3 py-3 text-black dark:text-white">{shopTypeLabel(p.type)}</td>
+                                <td className="px-3 py-3 text-black dark:text-white">{p.creditsSpent}</td>
+                                <td className="max-w-md break-all px-3 py-3 font-mono text-xs text-body dark:text-bodydark">
+                                  {formatMeta(p.meta)}
+                                </td>
+                                <td className="px-3 py-3 text-body dark:text-bodydark">{formatDate(p.createdAt)}</td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </section>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

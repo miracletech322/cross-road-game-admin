@@ -25,6 +25,16 @@ export type CreditTransaction = {
   updatedAt?: string;
 };
 
+export type ShopPurchaseRecord = {
+  id: string;
+  userId: string;
+  type: 'shield' | 'buyback' | 'character' | 'adblock';
+  creditsSpent: number;
+  meta: Record<string, unknown>;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
 let unauthorizedHandler: (() => void) | null = null;
 
 export function setUnauthorizedHandler(handler: (() => void) | null) {
@@ -107,4 +117,13 @@ export async function deleteUserRequest(id: string): Promise<{ user: PublicUser 
 
 export async function listCreditTransactionsRequest(): Promise<{ transactions: CreditTransaction[] }> {
   return apiFetch<{ transactions: CreditTransaction[] }>('/api/credits/transactions');
+}
+
+export async function getUserHistoryRequest(userId: string): Promise<{
+  creditTransactions: CreditTransaction[];
+  shopPurchases: ShopPurchaseRecord[];
+}> {
+  return apiFetch<{ creditTransactions: CreditTransaction[]; shopPurchases: ShopPurchaseRecord[] }>(
+    `/api/users/${encodeURIComponent(userId)}/history`
+  );
 }
